@@ -10,5 +10,9 @@ enum class CodigoHttp(val codigo: Int) {
   NOT_FOUND(404),
 }
 
-class Pedido(val ip: String, val url: String, val fechaHora: LocalDateTime)
+class Pedido(val ip: String, val url: String, val fechaHora: LocalDateTime) {
+  fun protocolo() = url.split(":/").get(0)
+  fun ruta() = url.split(":/").get(1)
+  fun extención() = url.split(".").last()
+}
 class Respuesta(val codigo: CodigoHttp, val body: String, val tiempo: Int, val pedido: Pedido)
