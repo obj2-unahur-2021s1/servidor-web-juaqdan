@@ -1,12 +1,11 @@
-import io.mockk.InternalPlatformDsl.toStr
-import io.mockk.internalSubstitute
-import org.apache.commons.io.filefilter.TrueFileFilter
+import ar.edu.unahur.obj2.servidorWeb.Pedido
+import java.time.LocalDateTime
 
-// Pueden usar este archivo para hacer pruebas rápidas,
-// de la misma forma en que usaban el REPL de Wollok.
+val pedido1 = Pedido("192.168.110.11", "http://pepito.com.ar/documentos/doc1.html",
+                     LocalDateTime.of(2020, 3, 20, 0, 0, 0))
 
-// OJO: lo que esté aquí no será tenido en cuenta
-// en la corrección ni reemplaza a los tests.
+
+pedido1.protocolo()
 
 "https://Google.com.ar.html".split(":/").get(0)
 "https://Google.com.ar.html".split(":/").get(1)

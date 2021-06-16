@@ -15,4 +15,39 @@ class Pedido(val ip: String, val url: String, val fechaHora: LocalDateTime) {
   fun ruta() = url.split(":/").get(1)
   fun extención() = url.split(".").last()
 }
+
 class Respuesta(val codigo: CodigoHttp, val body: String, val tiempo: Int, val pedido: Pedido)
+
+
+class Servidor {
+
+  val modulos = mutableListOf<Modulo>()
+
+  fun hayModuloQuePuedaResponder(unPedido: Pedido) = modulos.any { it.puedeResponderA(unPedido)}
+  fun moduloQuePuedenResponder(unPedido: Pedido) = modulos.first { it.puedeResponderA(unPedido) }
+
+  fun respuestaA(unPedido: Pedido) =
+    if (hayModuloQuePuedaResponder(unPedido)) {
+      moduloQuePuedenResponder(unPedido).generarRespuestaA(unPedido)
+    } else {
+      Respuesta(CodigoHttp.NOT_FOUND, "", 100, unPedido)
+    }
+
+
+  fun enviarRespuestaA(unPedido: Pedido) =
+    if (unPedido.protocolo().equals("http")) {
+      respuestaA(unPedido)
+    } else {
+      Respuesta(CodigoHttp.NOT_IMPLEMENTED, "", 100, unPedido)
+    }
+  }
+
+
+
+class Modulo (val extenciones: MutableList<String>, val texto: String, val tiempo: Int ) {
+
+  fun puedeResponderA (unPedido: Pedido) = extenciones.any { it.equals(unPedido.extención())}
+
+  fun generarRespuestaA(unPedido: Pedido) = Respuesta(CodigoHttp.OK, texto, tiempo, unPedido)
+
+}
