@@ -16,12 +16,13 @@ class Pedido(val ip: String, val url: String, val fechaHora: LocalDateTime) {
   fun extención() = url.split(".").last()
 }
 
-class Respuesta(val codigo: CodigoHttp, val body: String, val tiempo: Int, val pedido: Pedido)
+class Respuesta(val codigo: CodigoHttp, val body: String, val tiempo: Int, val pedido: Pedido, val modulo: Modulo?)
 
 
-class Servidor {
+object servidor {
 
   val modulos = mutableListOf<Modulo>()
+  val analizadores = mutableListOf<Analizador>()
 
   fun hayModuloQuePuedaResponder(unPedido: Pedido) = modulos.any { it.puedeResponderA(unPedido)}
   fun moduloQuePuedenResponder(unPedido: Pedido) = modulos.first { it.puedeResponderA(unPedido) }
@@ -30,24 +31,64 @@ class Servidor {
     if (hayModuloQuePuedaResponder(unPedido)) {
       moduloQuePuedenResponder(unPedido).generarRespuestaA(unPedido)
     } else {
-      Respuesta(CodigoHttp.NOT_FOUND, "", 100, unPedido)
+      Respuesta(CodigoHttp.NOT_FOUND, "", 100, unPedido, null)
     }
 
 
-  fun enviarRespuestaA(unPedido: Pedido) =
+  fun atenderPedido(unPedido: Pedido) =
     if (unPedido.protocolo().equals("http")) {
       respuestaA(unPedido)
     } else {
-      Respuesta(CodigoHttp.NOT_IMPLEMENTED, "", 100, unPedido)
+      Respuesta(CodigoHttp.NOT_IMPLEMENTED, "", 100, unPedido, null)
     }
-  }
+
+}
+
+
 
 
 
 class Modulo (val extenciones: MutableList<String>, val texto: String, val tiempo: Int ) {
 
+  val respuestas = mutableListOf<Respuesta>()
+  val pedidos = mutableListOf<Pedido>()
+
   fun puedeResponderA (unPedido: Pedido) = extenciones.any { it.equals(unPedido.extención())}
 
-  fun generarRespuestaA(unPedido: Pedido) = Respuesta(CodigoHttp.OK, texto, tiempo, unPedido)
+  fun generarRespuestaA(unPedido: Pedido): Respuesta {
+    val respuesta: Respuesta
+    respuesta = Respuesta(CodigoHttp.OK, texto, tiempo, unPedido, this)
+    respuestas.add(respuesta)
+    pedidos.add(unPedido)
+    return respuesta
+  }
 
 }
+
+abstract class Analizador {
+
+}
+
+class DetectorDeDemora (val demoraMinima: Int): Analizador() {
+
+   fun cantDeRespuestasDemoradasDe(unModulo: Modulo) = unModulo.respuestas.count { it.tiempo > demoraMinima }
+
+}
+
+class IpsSospechosas (val listaDeSospecha: MutableList<String>): Analizador() {
+
+  val respuestas = mutableListOf<Respuesta>()
+
+  val pedidosSospechosos = mutableListOf<Pedido>()
+
+  fun pedidosConIpSospechosa(unaIp: String) = pedidosSospechosos.count { it.ip == unaIp }
+
+  fun cantPedidosConIpSospechosaDe (unModulo: Modulo) = unModulo.pedidos.count { listaDeSospecha.contains(it.ip) }
+
+  fun moduloConMasPedidosSospechosos() = servidor.modulos.maxByOrNull { cantPedidosConIpSospechosaDe(it) }
+
+  fun ipsSospechosasDeUnaruta (unaRuta: String) =
+
+
+}
+
