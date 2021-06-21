@@ -13,7 +13,7 @@ enum class CodigoHttp(val codigo: Int) {
 class Pedido(val ip: String, val url: String, val fechaHora: LocalDateTime) {
   fun protocolo() = url.split(":/").get(0)
   fun ruta() = url.split(":/").get(1)
-  fun extención() = url.split(".").last()
+  fun extension() = url.split(".").last()
 }
 
 class Respuesta(val codigo: CodigoHttp, val body: String, val tiempo: Int, val pedido: Pedido, val modulo: Modulo?)
@@ -31,7 +31,7 @@ object servidor {
     if (hayModuloQuePuedaResponder(unPedido)) {
       moduloQuePuedenResponder(unPedido).generarRespuestaA(unPedido)
     } else {
-      Respuesta(CodigoHttp.NOT_FOUND, "", 100, unPedido, null)
+      Respuesta(CodigoHttp.NOT_FOUND, "", 10, unPedido, null)
     }
 
 
@@ -39,7 +39,7 @@ object servidor {
     if (unPedido.protocolo().equals("http")) {
       respuestaA(unPedido)
     } else {
-      Respuesta(CodigoHttp.NOT_IMPLEMENTED, "", 100, unPedido, null)
+      Respuesta(CodigoHttp.NOT_IMPLEMENTED, "", 10, unPedido, null)
     }
 
 }
@@ -53,7 +53,7 @@ class Modulo (val extenciones: MutableList<String>, val texto: String, val tiemp
   val respuestas = mutableListOf<Respuesta>()
   val pedidos = mutableListOf<Pedido>()
 
-  fun puedeResponderA (unPedido: Pedido) = extenciones.any { it.equals(unPedido.extención())}
+  fun puedeResponderA (unPedido: Pedido) = extenciones.any { it.equals(unPedido.extension())}
 
   fun generarRespuestaA(unPedido: Pedido): Respuesta {
     val respuesta: Respuesta
@@ -87,7 +87,7 @@ class IpsSospechosas (val listaDeSospecha: MutableList<String>): Analizador() {
 
   fun moduloConMasPedidosSospechosos() = servidor.modulos.maxByOrNull { cantPedidosConIpSospechosaDe(it) }
 
-  fun ipsSospechosasDeUnaruta (unaRuta: String) =
+  //fun ipsSospechosasDeUnaruta (unaRuta: String) =
 
 
 }

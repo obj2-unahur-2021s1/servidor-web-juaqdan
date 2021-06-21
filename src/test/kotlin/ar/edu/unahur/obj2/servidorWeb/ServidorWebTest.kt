@@ -20,14 +20,13 @@ class ServidorWebTest : DescribeSpec({
       pedido1.ruta().shouldBe("/pepito.com.ar/documentos/doc1.html")
     }
     it ("Extención") {
-      pedido1.extención().shouldBe("html")
+      pedido1.extension().shouldBe("html")
     }
   }
 
   describe("Un servidor web") {
-    val servidor1 = Servidor()
     it ("Recibir pedido") {
-      servidor1.enviarRespuestaA(pedido2).codigo.codigo.shouldBe(501)
+      servidor.atenderPedido(pedido2).codigo.codigo.shouldBe(501)
     }
   }
 })
