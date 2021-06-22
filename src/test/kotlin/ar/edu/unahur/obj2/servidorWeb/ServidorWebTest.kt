@@ -39,12 +39,12 @@ class ServidorWebTest : DescribeSpec({
     }
   }
 
-  describe("Un servidor web") {
+  /* describe("Un servidor web") {
     it ("Atender pedido") {
       servidor.atenderPedido(pedido2).codigo.codigo.shouldBe(501)
       servidor.atenderPedido(pedido3).codigo.codigo.shouldBe(200)
     }
-  }
+  }*/ // Por lo que entiendo, a partir de los siguientes requerimientos ya no devuelve nada, solo envía las respuestas.
     describe("analizadores") {
 
         it("detector de demoras") {

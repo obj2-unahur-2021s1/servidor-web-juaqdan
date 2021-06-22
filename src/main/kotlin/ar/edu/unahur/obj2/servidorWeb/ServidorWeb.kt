@@ -1,5 +1,6 @@
 package ar.edu.unahur.obj2.servidorWeb
 
+import java.security.interfaces.RSAKey
 import java.time.LocalDateTime
 
 // Para no tener los códigos "tirados por ahí", usamos un enum que le da el nombre que corresponde a cada código
@@ -26,25 +27,30 @@ object servidor {
 
   fun hayModuloQuePuedaResponder(unPedido: Pedido) = modulos.any { it.puedeResponderA(unPedido)}
   fun moduloQuePuedenResponder(unPedido: Pedido) = modulos.first { it.puedeResponderA(unPedido) }
-  fun enviarModuloAAnalizadores(unModulo : Modulo) {
-      if (analizadores.size > 0) analizadores.forEach { it.modulos.add(unModulo) }
+  fun enviarRespuestaAnalizadores(unaRespuesta : Respuesta) {
+      if (analizadores.size > 0) analizadores.forEach { it.respuestas.add(unaRespuesta) }
   }
 
+  /* Genera una respuesta a un pedido si hay un modulo que pueda responder, de lo contrario, genera una respuesta
+     de error  */
   fun respuestaA(unPedido: Pedido) =
-    if (hayModuloQuePuedaResponder(unPedido)) {
-      enviarModuloAAnalizadores(moduloQuePuedenResponder(unPedido))
+    if (hayModuloQuePuedaResponder(unPedido) && unPedido.protocolo().equals("http")) {
       moduloQuePuedenResponder(unPedido).generarRespuestaA(unPedido)
     } else {
-      Respuesta(CodigoHttp.NOT_FOUND, "", 10, unPedido, null)
+      respuestaDeError(unPedido)
     }
 
+  /*Genera una respuesta de error según si el pedido no tiene el protocolo indicado, lanza "NOT_FOUND". Caso contrario
+    devuelve "NOT_IMPLEMENT" ya que este método solo se usa cuando no hay un módulo que pueda responder*/
+  fun respuestaDeError(unPedido: Pedido) {
+      noModulo.generarRespuestaA(unPedido)
+  }
 
-  fun atenderPedido(unPedido: Pedido) =
-    if (unPedido.protocolo().equals("http")) {
-      respuestaA(unPedido)
-    } else {
-      Respuesta(CodigoHttp.NOT_IMPLEMENTED, "", 10, unPedido, null)
-    }
+  /*Al atender el pedido, genera una respuesta y la envía a los analizadores*/
+  fun atenderPedido(unPedido: Pedido) {
+    val respuesta = respuestaA(unPedido)
+    enviarRespuestaAnalizadores(respuesta as Respuesta)
+  }
 
 }
 
@@ -52,14 +58,14 @@ object servidor {
 
 
 
-class Modulo (val extenciones: MutableList<String>, val texto: String, val tiempo: Int ) {
+open class Modulo (val extenciones: MutableList<String>, val texto: String, val tiempo: Int ) {
 
   val respuestas = mutableListOf<Respuesta>()
   val pedidos = mutableListOf<Pedido>()
 
   fun puedeResponderA (unPedido: Pedido) = extenciones.any { it.equals(unPedido.extension())}
 
-  fun generarRespuestaA(unPedido: Pedido): Respuesta {
+  open fun generarRespuestaA(unPedido: Pedido): Respuesta {
     val respuesta: Respuesta
     respuesta = Respuesta(CodigoHttp.OK, texto, tiempo, unPedido, this)
     respuestas.add(respuesta)
@@ -69,8 +75,25 @@ class Modulo (val extenciones: MutableList<String>, val texto: String, val tiemp
 
 }
 
+/*Representa la falta de modulo para una respuesta que se genera al tener una consulta que no puede ser respondida
+  por algún módulo*/
+object noModulo: Modulo(extenciones = mutableListOf(), texto = "", tiempo = 100) {
+  override fun generarRespuestaA(unPedido: Pedido): Respuesta {
+    val respuesta =
+      if (unPedido.protocolo().equals("http")) {
+        Respuesta(CodigoHttp.NOT_FOUND, texto, tiempo, unPedido, this)
+      } else {
+        Respuesta(CodigoHttp.NOT_IMPLEMENTED, texto, tiempo, unPedido, this)
+      }
+
+    respuestas.add(respuesta)
+    pedidos.add(unPedido)
+    return respuesta
+  }
+}
+
 abstract class Analizador {
-    val modulos = mutableListOf<Modulo>()
+  val respuestas = mutableListOf<Respuesta>()
 }
 
 class DetectorDeDemora (val demoraMinima: Int): Analizador() {
@@ -81,18 +104,21 @@ class DetectorDeDemora (val demoraMinima: Int): Analizador() {
 
 class IpsSospechosas (val listaDeSospecha: MutableList<String>): Analizador() {
 
-  val respuestas = mutableListOf<Respuesta>()
-
   val pedidosSospechosos = mutableListOf<Pedido>()
 
-  //fun pedidosConIpSospechosa(unaIp: String) = modulos.first { it.pedidos.any { it.ip.equals(unaIp) } }
+  fun cantPedidosConIpSospechosaDe (unaIp: String) = respuestas.count { it.pedido.ip == unaIp }
 
-  fun cantPedidosConIpSospechosaDe (unaIp: String) = modulos.map { it.pedidos }.flatten().map { listaDeSospecha.contains(it.ip) }.size
+  fun modulosRegistrados() = respuestas.map {it.modulo}
 
-  //fun moduloConMasPedidosSospechosos() = servidor.modulos.maxByOrNull { cantPedidosConIpSospechosaDe(it) }
+  fun consultasSospechosasA(unModulo: Modulo) = unModulo.pedidos.count { listaDeSospecha.contains(it.ip) }
 
-  //fun ipsSospechosasDeUnaruta (unaRuta: String) =
-
+  fun moduloConMasPedidosSospechosos() =
+    if (modulosRegistrados().size > 0) {
+      modulosRegistrados().maxByOrNull { consultasSospechosasA(it!!) }
+    } else {
+      noModulo
+    }
+  fun ipsSospechosasDeUnaruta (unaRuta: String) = pedidosSospechosos.filter { it.ruta().equals(unaRuta) }.map { it.ip }
 
 }
 
