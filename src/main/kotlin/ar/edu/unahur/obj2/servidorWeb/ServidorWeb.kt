@@ -26,9 +26,13 @@ object servidor {
 
   fun hayModuloQuePuedaResponder(unPedido: Pedido) = modulos.any { it.puedeResponderA(unPedido)}
   fun moduloQuePuedenResponder(unPedido: Pedido) = modulos.first { it.puedeResponderA(unPedido) }
+  fun enviarModuloAAnalizadores(unModulo : Modulo) {
+      if (analizadores.size > 0) analizadores.forEach { it.modulos.add(unModulo) }
+  }
 
   fun respuestaA(unPedido: Pedido) =
     if (hayModuloQuePuedaResponder(unPedido)) {
+      enviarModuloAAnalizadores(moduloQuePuedenResponder(unPedido))
       moduloQuePuedenResponder(unPedido).generarRespuestaA(unPedido)
     } else {
       Respuesta(CodigoHttp.NOT_FOUND, "", 10, unPedido, null)
@@ -66,7 +70,7 @@ class Modulo (val extenciones: MutableList<String>, val texto: String, val tiemp
 }
 
 abstract class Analizador {
-
+    val modulos = mutableListOf<Modulo>()
 }
 
 class DetectorDeDemora (val demoraMinima: Int): Analizador() {
@@ -81,11 +85,11 @@ class IpsSospechosas (val listaDeSospecha: MutableList<String>): Analizador() {
 
   val pedidosSospechosos = mutableListOf<Pedido>()
 
-  fun pedidosConIpSospechosa(unaIp: String) = pedidosSospechosos.count { it.ip == unaIp }
+  //fun pedidosConIpSospechosa(unaIp: String) = modulos.first { it.pedidos.any { it.ip.equals(unaIp) } }
 
-  fun cantPedidosConIpSospechosaDe (unModulo: Modulo) = unModulo.pedidos.count { listaDeSospecha.contains(it.ip) }
+  fun cantPedidosConIpSospechosaDe (unaIp: String) = modulos.map { it.pedidos }.flatten().map { listaDeSospecha.contains(it.ip) }.size
 
-  fun moduloConMasPedidosSospechosos() = servidor.modulos.maxByOrNull { cantPedidosConIpSospechosaDe(it) }
+  //fun moduloConMasPedidosSospechosos() = servidor.modulos.maxByOrNull { cantPedidosConIpSospechosaDe(it) }
 
   //fun ipsSospechosasDeUnaruta (unaRuta: String) =
 
