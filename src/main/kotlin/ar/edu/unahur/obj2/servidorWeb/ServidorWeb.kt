@@ -1,6 +1,7 @@
 package ar.edu.unahur.obj2.servidorWeb
 
 import java.security.interfaces.RSAKey
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 // Para no tener los códigos "tirados por ahí", usamos un enum que le da el nombre que corresponde a cada código
@@ -94,6 +95,7 @@ object noModulo: Modulo(extenciones = mutableListOf(), texto = "", tiempo = 100)
 
 abstract class Analizador {
   val respuestas = mutableListOf<Respuesta>()
+
 }
 
 class DetectorDeDemora (val demoraMinima: Int): Analizador() {
@@ -122,3 +124,15 @@ class IpsSospechosas (val listaDeSospecha: MutableList<String>): Analizador() {
 
 }
 
+class estadisticas: Analizador() {
+  fun tiempoPromedioDeRespuesta() = respuestas.sumBy { it.tiempo } / respuestas.size
+
+  fun pedidos() = respuestas.map { it.pedido }
+  fun cantPedidosEntreFechas(fechaInicio: LocalDateTime, fechaFin: LocalDateTime) =
+    pedidos().count { it.fechaHora in fechaInicio..fechaFin }
+
+  fun cantRespuestasQueConstienen(unaPalabra: String) = respuestas.count { it.body.contains(unaPalabra) }
+
+  fun cantDeRespuestasExitosas() = respuestas.count { it.codigo == CodigoHttp.OK }
+ // fun porecentajePedidosConRespuestaExitosa() =
+}
