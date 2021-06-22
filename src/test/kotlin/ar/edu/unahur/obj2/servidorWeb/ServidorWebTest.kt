@@ -27,6 +27,9 @@ class ServidorWebTest : DescribeSpec({
   val detectorDeDemoras = DetectorDeDemora(2)
   servidor.analizadores.add(detectorDeDemoras)
 
+  val estadistica = Estadistica()
+  servidor.analizadores.add(estadistica)
+
   describe ( "Un pedido") {
     it ("Protocolo") {
       pedido1.protocolo().shouldBe("http")
@@ -39,10 +42,11 @@ class ServidorWebTest : DescribeSpec({
     }
   }
 
-  /* describe("Un servidor web") {
+  /*
+  describe("Un servidor web") {
     it ("Atender pedido") {
-      servidor.atenderPedido(pedido2).codigo.codigo.shouldBe(501)
-      servidor.atenderPedido(pedido3).codigo.codigo.shouldBe(200)
+      servidor.atenderPedido(pedido2).codigo.shouldBe(501)
+      servidor.atenderPedido(pedido3).codigo.shouldBe(200)
     }
   }*/ // Por lo que entiendo, a partir de los siguientes requerimientos ya no devuelve nada, solo envía las respuestas.
     describe("analizadores") {
@@ -52,6 +56,14 @@ class ServidorWebTest : DescribeSpec({
         }
       it("ip sospechosas"){
         ipSospechosas.cantPedidosConIpSospechosaDe("192.168.110.13").shouldBe(0)
+
+        ipSospechosas.moduloConMasPedidosSospechosos().shouldBe(noModulo)
+
+        ipSospechosas.ipsSospechosasDeUnaruta("/documentos/doc2").shouldBe(listOf())
       }
+      it("Estadistica"){
+        estadistica.tiempoPromedioDeRespuesta().shouldBe(0)
+      }
+
     }
 })

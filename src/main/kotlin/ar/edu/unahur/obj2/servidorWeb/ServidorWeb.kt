@@ -48,9 +48,10 @@ object servidor {
   }
 
   /*Al atender el pedido, genera una respuesta y la envía a los analizadores*/
-  fun atenderPedido(unPedido: Pedido) {
+  fun atenderPedido(unPedido: Pedido) : Respuesta{
     val respuesta = respuestaA(unPedido)
     enviarRespuestaAnalizadores(respuesta as Respuesta)
+    return(respuesta)
   }
 
 }
@@ -124,8 +125,8 @@ class IpsSospechosas (val listaDeSospecha: MutableList<String>): Analizador() {
 
 }
 
-class estadisticas: Analizador() {
-  fun tiempoPromedioDeRespuesta() = respuestas.sumBy { it.tiempo } / respuestas.size
+class Estadistica: Analizador() {
+  fun tiempoPromedioDeRespuesta() = if(respuestas.size > 0) respuestas.sumBy { it.tiempo } / respuestas.size else 0
 
   fun pedidos() = respuestas.map { it.pedido }
   fun cantPedidosEntreFechas(fechaInicio: LocalDateTime, fechaFin: LocalDateTime) =
