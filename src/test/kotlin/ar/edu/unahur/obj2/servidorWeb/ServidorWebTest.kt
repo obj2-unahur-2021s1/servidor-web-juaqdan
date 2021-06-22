@@ -10,7 +10,7 @@ class ServidorWebTest : DescribeSpec({
     LocalDateTime.of(2020, 3, 20, 0, 0, 0))
 
   val pedido2 = Pedido("192.168.110.12", "https://pepito.com.ar/documentos/doc2.html",
-    LocalDateTime.of(2020, 3, 20, 0, 0, 0))
+    LocalDateTime.of(2020, 3, 19, 0, 0, 0))
 
   val pedido3 = Pedido("192.168.110.13", "http://pepito.com.ar/imagenes/img1.png",
     LocalDateTime.of(2020, 3, 20, 5, 30, 0))
@@ -63,6 +63,13 @@ class ServidorWebTest : DescribeSpec({
       }
       it("Estadistica"){
         estadistica.tiempoPromedioDeRespuesta().shouldBe(0)
+
+        estadistica.cantPedidosEntreFechas(LocalDateTime.of(2020, 3, 19, 20, 0, 0),
+          LocalDateTime.of(2020, 3, 21, 0, 0, 0)).shouldBe(0) //retornaria 2
+
+        estadistica.cantRespuestasQueConstienen("enviado").shouldBe(0) //retorna 1
+
+        estadistica.porecentajePedidosConRespuestaExitosa().shouldBe(0)
       }
 
     }

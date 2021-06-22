@@ -135,5 +135,6 @@ class Estadistica: Analizador() {
   fun cantRespuestasQueConstienen(unaPalabra: String) = respuestas.count { it.body.contains(unaPalabra) }
 
   fun cantDeRespuestasExitosas() = respuestas.count { it.codigo == CodigoHttp.OK }
- // fun porecentajePedidosConRespuestaExitosa() =
+  fun porecentajePedidosConRespuestaExitosa() = if(respuestas.size > 0) (cantDeRespuestasExitosas() / respuestas.size) * 100 else 0
+
 }
