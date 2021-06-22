@@ -10,10 +10,16 @@ class ServidorWebTest : DescribeSpec({
     LocalDateTime.of(2020, 3, 20, 0, 0, 0))
 
   val pedido2 = Pedido("192.168.110.12", "https://pepito.com.ar/documentos/doc2.html",
-    LocalDateTime.of(2020, 3, 19, 0, 0, 0))
+    LocalDateTime.of(2020, 3, 21, 0, 0, 0))
 
   val pedido3 = Pedido("192.168.110.13", "http://pepito.com.ar/imagenes/img1.png",
     LocalDateTime.of(2020, 3, 20, 5, 30, 0))
+
+  val pedido4 = Pedido("192.168.110.14", "http://pepito.com.ar/documentos/doc2.html",
+    LocalDateTime.of(2020, 3, 21, 0, 0, 0))
+
+  val pedido5 = Pedido("192.168.110.13", "http://pepito.com.ar/imagenes/boomerang.gif",
+    LocalDateTime.of(2020, 3, 25, 0, 30, 0))
 
   val moduloDocumentos = Modulo(mutableListOf<String>("docx", "pdf", "html"), "Documento listo", 3)
   servidor.modulos.add(moduloDocumentos)
@@ -42,34 +48,38 @@ class ServidorWebTest : DescribeSpec({
     }
   }
 
-  /*
+
   describe("Un servidor web") {
-    it ("Atender pedido") {
-      servidor.atenderPedido(pedido2).codigo.shouldBe(501)
-      servidor.atenderPedido(pedido3).codigo.shouldBe(200)
+    it("Atender pedido") {
+      servidor.atenderPedido(pedido2).codigo.codigo.shouldBe(501)
+      servidor.atenderPedido(pedido3).codigo.codigo.shouldBe(200)
     }
-  }*/ // Por lo que entiendo, a partir de los siguientes requerimientos ya no devuelve nada, solo envía las respuestas.
+  }
     describe("analizadores") {
+      servidor.atenderPedido(pedido3)
+      servidor.atenderPedido(pedido4)
+      servidor.atenderPedido(pedido5)
 
-        it("detector de demoras") {
-          detectorDeDemoras.cantDeRespuestasDemoradasDe(moduloImagenes).shouldBe(0)
-        }
+      it("detector de demoras") {
+        detectorDeDemoras.cantDeRespuestasDemoradasDe(moduloImagenes).shouldBe(0)
+      }
       it("ip sospechosas"){
-        ipSospechosas.cantPedidosConIpSospechosaDe("192.168.110.13").shouldBe(0)
 
-        ipSospechosas.moduloConMasPedidosSospechosos().shouldBe(noModulo)
+        ipSospechosas.cantPedidosConIpSospechosaDe("192.168.110.13").shouldBe(2)
+
+        //ipSospechosas.moduloConMasPedidosSospechosos().shouldBe(moduloImagenes)
 
         ipSospechosas.ipsSospechosasDeUnaruta("/documentos/doc2").shouldBe(listOf())
       }
       it("Estadistica"){
-        estadistica.tiempoPromedioDeRespuesta().shouldBe(0)
+        estadistica.tiempoPromedioDeRespuesta().shouldBe(5)
 
         estadistica.cantPedidosEntreFechas(LocalDateTime.of(2020, 3, 19, 20, 0, 0),
-          LocalDateTime.of(2020, 3, 21, 0, 0, 0)).shouldBe(0) //retornaria 2
+          LocalDateTime.of(2020, 3, 21, 9, 30, 0)).shouldBe(2)
 
-        estadistica.cantRespuestasQueConstienen("enviado").shouldBe(0) //retorna 1
+        estadistica.cantRespuestasQueConstienen("lista").shouldBe(2)
 
-        estadistica.porecentajePedidosConRespuestaExitosa().shouldBe(0)
+        estadistica.porecentajePedidosConRespuestaExitosa().shouldBe(100)
       }
 
     }

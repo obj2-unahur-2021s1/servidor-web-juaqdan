@@ -4,8 +4,6 @@ import java.security.interfaces.RSAKey
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-// Para no tener los códigos "tirados por ahí", usamos un enum que le da el nombre que corresponde a cada código
-// La idea de las clases enumeradas es usar directamente sus objetos: CodigoHTTP.OK, CodigoHTTP.NOT_IMPLEMENTED, etc
 enum class CodigoHttp(val codigo: Int) {
   OK(200),
   NOT_IMPLEMENTED(501),
@@ -32,8 +30,6 @@ object servidor {
       if (analizadores.size > 0) analizadores.forEach { it.respuestas.add(unaRespuesta) }
   }
 
-  /* Genera una respuesta a un pedido si hay un modulo que pueda responder, de lo contrario, genera una respuesta
-     de error  */
   fun respuestaA(unPedido: Pedido) =
     if (hayModuloQuePuedaResponder(unPedido) && unPedido.protocolo().equals("http")) {
       moduloQuePuedenResponder(unPedido).generarRespuestaA(unPedido)
@@ -41,13 +37,10 @@ object servidor {
       respuestaDeError(unPedido)
     }
 
-  /*Genera una respuesta de error según si el pedido no tiene el protocolo indicado, lanza "NOT_FOUND". Caso contrario
-    devuelve "NOT_IMPLEMENT" ya que este método solo se usa cuando no hay un módulo que pueda responder*/
-  fun respuestaDeError(unPedido: Pedido) {
+  fun respuestaDeError(unPedido: Pedido) =
       noModulo.generarRespuestaA(unPedido)
-  }
 
-  /*Al atender el pedido, genera una respuesta y la envía a los analizadores*/
+
   fun atenderPedido(unPedido: Pedido) : Respuesta{
     val respuesta = respuestaA(unPedido)
     enviarRespuestaAnalizadores(respuesta as Respuesta)
@@ -77,8 +70,6 @@ open class Modulo (val extenciones: MutableList<String>, val texto: String, val 
 
 }
 
-/*Representa la falta de modulo para una respuesta que se genera al tener una consulta que no puede ser respondida
-  por algún módulo*/
 object noModulo: Modulo(extenciones = mutableListOf(), texto = "", tiempo = 100) {
   override fun generarRespuestaA(unPedido: Pedido): Respuesta {
     val respuesta =
@@ -117,7 +108,7 @@ class IpsSospechosas (val listaDeSospecha: MutableList<String>): Analizador() {
 
   fun moduloConMasPedidosSospechosos() =
     if (modulosRegistrados().size > 0) {
-      modulosRegistrados().maxByOrNull { consultasSospechosasA(it!!) }
+      modulosRegistrados().maxBy { consultasSospechosasA(it!!) }
     } else {
       noModulo
     }
