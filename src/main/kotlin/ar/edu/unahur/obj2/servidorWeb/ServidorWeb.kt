@@ -41,7 +41,7 @@ object servidor {
       noModulo.generarRespuestaA(unPedido)
 
 
-  fun atenderPedido(unPedido: Pedido) : Respuesta{
+  fun atenderPedido(unPedido: Pedido) : Respuesta {
     val respuesta = respuestaA(unPedido)
     enviarRespuestaAnalizadores(respuesta as Respuesta)
     return(respuesta)
@@ -56,7 +56,8 @@ object servidor {
 open class Modulo (val extenciones: MutableList<String>, val texto: String, val tiempo: Int ) {
 
   val respuestas = mutableListOf<Respuesta>()
-  val pedidos = mutableListOf<Pedido>()
+
+  fun pedidos() = respuestas.map { it.pedido }
 
   fun puedeResponderA (unPedido: Pedido) = extenciones.any { it.equals(unPedido.extension())}
 
@@ -64,7 +65,6 @@ open class Modulo (val extenciones: MutableList<String>, val texto: String, val 
     val respuesta: Respuesta
     respuesta = Respuesta(CodigoHttp.OK, texto, tiempo, unPedido, this)
     respuestas.add(respuesta)
-    pedidos.add(unPedido)
     return respuesta
   }
 
@@ -80,7 +80,6 @@ object noModulo: Modulo(extenciones = mutableListOf(), texto = "", tiempo = 100)
       }
 
     respuestas.add(respuesta)
-    pedidos.add(unPedido)
     return respuesta
   }
 }
@@ -98,21 +97,21 @@ class DetectorDeDemora (val demoraMinima: Int): Analizador() {
 
 class IpsSospechosas (val listaDeSospecha: MutableList<String>): Analizador() {
 
-  val pedidosSospechosos = mutableListOf<Pedido>()
+  fun pedidosSospechosos() = respuestas.map { it.pedido }.filter { listaDeSospecha.contains(it.ip) }
 
   fun cantPedidosConIpSospechosaDe (unaIp: String) = respuestas.count { it.pedido.ip == unaIp }
 
   fun modulosRegistrados() = respuestas.map {it.modulo}
 
-  fun consultasSospechosasA(unModulo: Modulo) = unModulo.pedidos.count { listaDeSospecha.contains(it.ip) }
+  fun consultasSospechosasA(unModulo: Modulo) = unModulo.pedidos().count { listaDeSospecha.contains(it.ip) }
 
-  fun moduloConMasPedidosSospechosos() =
+  fun moduloConMasConsultasSospechosas() =
     if (modulosRegistrados().size > 0) {
-      modulosRegistrados().maxBy { consultasSospechosasA(it!!) }
+      modulosRegistrados().maxByOrNull { consultasSospechosasA(it!!) } ?: noModulo
     } else {
       noModulo
     }
-  fun ipsSospechosasDeUnaruta (unaRuta: String) = pedidosSospechosos.filter { it.ruta().equals(unaRuta) }.map { it.ip }
+  fun ipsSospechosasDeUnaruta (unaRuta: String) = pedidosSospechosos().filter { it.ruta().equals(unaRuta) }.map { it.ip }
 
 }
 
@@ -126,6 +125,6 @@ class Estadistica: Analizador() {
   fun cantRespuestasQueConstienen(unaPalabra: String) = respuestas.count { it.body.contains(unaPalabra) }
 
   fun cantDeRespuestasExitosas() = respuestas.count { it.codigo == CodigoHttp.OK }
-  fun porecentajePedidosConRespuestaExitosa() = if(respuestas.size > 0) (cantDeRespuestasExitosas() / respuestas.size) * 100 else 0
+  fun porecentajePedidosConRespuestaExitosa(): Double = (cantDeRespuestasExitosas().toDouble() / respuestas.size) * 100
 
 }

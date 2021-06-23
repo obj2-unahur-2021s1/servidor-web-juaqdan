@@ -5,82 +5,142 @@ import io.kotest.matchers.shouldBe
 import java.time.LocalDateTime
 
 class ServidorWebTest : DescribeSpec({
+  val detectorDeDemoras = DetectorDeDemora(60)
+  val ipSospechosa = IpsSospechosas(mutableListOf("192.168.110.11", "192.168.110.12","192.168.110.13"))
+  val estadisticas = Estadistica()
+  val moduloImg = Modulo(mutableListOf("png", "jpg", "gif"), "Imagen lista", 100 )
+  val moduloDoc = Modulo(mutableListOf("txt", "doc", "docx"), "Documento listo", 50 )
 
-  val pedido1 = Pedido("192.168.110.11", "http://pepito.com.ar/documentos/doc1.html",
-    LocalDateTime.of(2020, 3, 20, 0, 0, 0))
+  val pedido1 = Pedido("192.168.110.11", "http://google.com.ar.png",
+                       LocalDateTime.of(2021,11,11, 10,12,12))
+  val pedido2 = Pedido("192.168.110.12", "http://facebook.com.ar.jpg",
+    LocalDateTime.of(2021,11,11, 10,12,12))
 
-  val pedido2 = Pedido("192.168.110.12", "https://pepito.com.ar/documentos/doc2.html",
-    LocalDateTime.of(2020, 3, 21, 0, 0, 0))
+  val pedido3 = Pedido("192.168.110.13", "http://youtube.com.ar.txt",
+    LocalDateTime.of(2021,11,11, 10,13,12))
 
-  val pedido3 = Pedido("192.168.110.13", "http://pepito.com.ar/imagenes/img1.png",
-    LocalDateTime.of(2020, 3, 20, 5, 30, 0))
+  val pedido4 = Pedido("192.168.110.14", "https://homebanking.com.ar.txt",
+    LocalDateTime.of(2021,11,11, 10,12,12))
 
-  val pedido4 = Pedido("192.168.110.14", "http://pepito.com.ar/documentos/doc2.html",
-    LocalDateTime.of(2020, 3, 21, 0, 0, 0))
+  val pedido5 = Pedido("192.168.110.15", "http://oracle.com.ar.jar",
+    LocalDateTime.of(2021,11,11, 10,12,12))
 
-  val pedido5 = Pedido("192.168.110.13", "http://pepito.com.ar/imagenes/boomerang.gif",
-    LocalDateTime.of(2020, 3, 25, 0, 30, 0))
+  val pedido6 = Pedido("192.168.110.13", "http://youtube.com.ar.png",
+    LocalDateTime.of(2021,11,11, 10,12,12))
 
-  val moduloDocumentos = Modulo(mutableListOf<String>("docx", "pdf", "html"), "Documento listo", 3)
-  servidor.modulos.add(moduloDocumentos)
+  val pedido7 = Pedido("192.168.110.12", "http://google.com.ar.png",
+    LocalDateTime.of(2021,11,11, 10,12,12))
 
-  val moduloImagenes = Modulo(mutableListOf<String>("gif", "png", "jpg"), "Imagen lista", 7)
-  servidor.modulos.add(moduloImagenes)
 
-  val ipSospechosas = IpsSospechosas(mutableListOf<String>("192.168.110.13", "192.168.110.11"))
-  servidor.analizadores.add(ipSospechosas)
 
-  val detectorDeDemoras = DetectorDeDemora(2)
-  servidor.analizadores.add(detectorDeDemoras)
-
-  val estadistica = Estadistica()
-  servidor.analizadores.add(estadistica)
-
-  describe ( "Un pedido") {
-    it ("Protocolo") {
+  describe ("Un pedido") {
+    it("Protocolo") {
       pedido1.protocolo().shouldBe("http")
+      pedido2.protocolo().shouldBe("http")
+      pedido3.protocolo().shouldBe("http")
     }
     it ("Ruta") {
-      pedido1.ruta().shouldBe("/pepito.com.ar/documentos/doc1.html")
+      pedido1.ruta().shouldBe("/google.com.ar.png")
+      pedido2.ruta().shouldBe("/facebook.com.ar.jpg")
+      pedido3.ruta().shouldBe("/youtube.com.ar.txt")
     }
     it ("Extención") {
-      pedido1.extension().shouldBe("html")
+      pedido1.extension().shouldBe("png")
+      pedido2.extension().shouldBe("jpg")
+      pedido3.extension().shouldBe("txt")
     }
   }
 
+  describe ("Responder pedido") {
 
-  describe("Un servidor web") {
-    it("Atender pedido") {
-      servidor.atenderPedido(pedido2).codigo.codigo.shouldBe(501)
-      servidor.atenderPedido(pedido3).codigo.codigo.shouldBe(200)
+    it ("Protocolo incorrecto") {
+      servidor.atenderPedido(pedido4).codigo.shouldBe(CodigoHttp.NOT_IMPLEMENTED)
+    }
+    it ("No hay modulo para responder") {
+      servidor.atenderPedido(pedido2).codigo.shouldBe(CodigoHttp.NOT_FOUND)
+    }
+    it ("Consulta exitosa") {
+      servidor.modulos.add(moduloImg)
+      servidor.atenderPedido(pedido1).codigo.shouldBe(CodigoHttp.OK)
     }
   }
-    describe("analizadores") {
-      servidor.atenderPedido(pedido3)
+
+  describe( "Analizadores") {
+    servidor.modulos.add(moduloImg)
+    servidor.modulos.add(moduloDoc)
+    servidor.analizadores.add(detectorDeDemoras)
+    servidor.analizadores.add(ipSospechosa)
+
+    servidor.atenderPedido(pedido1)
+    servidor.atenderPedido(pedido3)
+
+    describe("Tiempo de demora") {
+      it("Modulo de imagen") {
+        detectorDeDemoras.cantDeRespuestasDemoradasDe(moduloImg).shouldBe(1)
+      }
+      it("Modulo de documento") {
+        detectorDeDemoras.cantDeRespuestasDemoradasDe(moduloImg).shouldBe(0)
+      }
+    }
+
+    describe("Ips sospechosas") {
+      describe("Cantidad de pedidodos de una ip sospechosa") {
+        it ("192.168.110.11") {
+          ipSospechosa.cantPedidosConIpSospechosaDe("192.168.110.11").shouldBe(1)
+        }
+        it ("192.168.110.13") {
+          servidor.atenderPedido(pedido6)
+          ipSospechosa.cantPedidosConIpSospechosaDe("192.168.110.13").shouldBe(2)
+        }
+      }
+    }
+    describe( "Conjunto de IPs sospechosas que requirieron una cierta ruta") {
+      servidor.atenderPedido(pedido7)
+      it ("hola") {
+        ipSospechosa.ipsSospechosasDeUnaruta("/google.com.ar.png").shouldBe(listOf("192.168.110.11","192.168.110.12"))
+      }
+    }
+  }
+  describe("Modulo con mas iconsultas sospechosas") {
+    servidor.modulos.add(moduloImg)
+    servidor.modulos.add(moduloDoc)
+    servidor.analizadores.add(detectorDeDemoras)
+    servidor.analizadores.add(ipSospechosa)
+
+    servidor.atenderPedido(pedido1)
+    servidor.atenderPedido(pedido3)
+    it ("Modulo de imagen") {
+      ipSospechosa.moduloConMasConsultasSospechosas().shouldBe(moduloImg)
+    }
+  }
+
+  describe( "Estadisticas") {
+    servidor.modulos.add(moduloImg)
+    servidor.modulos.add(moduloDoc)
+    servidor.analizadores.add(detectorDeDemoras)
+    servidor.analizadores.add(ipSospechosa)
+    servidor.analizadores.add(estadisticas)
+
+    servidor.atenderPedido(pedido1)
+    servidor.atenderPedido(pedido2)
+    servidor.atenderPedido(pedido3)
+
+
+    it ("Tiempo promedio") {
+      estadisticas.tiempoPromedioDeRespuesta().shouldBe(83)
+    }
+
+    it ("Pedidos entres dos fechas") {
+      estadisticas.cantPedidosEntreFechas(LocalDateTime.of(2021,11,11, 0,0,0),
+        LocalDateTime.of(2021,11,14, 0,0,0,0)).shouldBe(3)
+    }
+    it ("cantidad de respuestas cuyo body incluye un determinado string") {
+      estadisticas.cantRespuestasQueConstienen("Imagen").shouldBe(2)
+    }
+    it ("Porcentaje de respuesta exitosa") {
+      estadisticas.porecentajePedidosConRespuestaExitosa().shouldBe(100.0)
       servidor.atenderPedido(pedido4)
-      servidor.atenderPedido(pedido5)
-
-      it("detector de demoras") {
-        detectorDeDemoras.cantDeRespuestasDemoradasDe(moduloImagenes).shouldBe(0)
-      }
-      it("ip sospechosas"){
-
-        ipSospechosas.cantPedidosConIpSospechosaDe("192.168.110.13").shouldBe(2)
-
-        //ipSospechosas.moduloConMasPedidosSospechosos().shouldBe(moduloImagenes)
-
-        ipSospechosas.ipsSospechosasDeUnaruta("/documentos/doc2").shouldBe(listOf())
-      }
-      it("Estadistica"){
-        estadistica.tiempoPromedioDeRespuesta().shouldBe(5)
-
-        estadistica.cantPedidosEntreFechas(LocalDateTime.of(2020, 3, 19, 20, 0, 0),
-          LocalDateTime.of(2020, 3, 21, 9, 30, 0)).shouldBe(2)
-
-        estadistica.cantRespuestasQueConstienen("lista").shouldBe(2)
-
-        estadistica.porecentajePedidosConRespuestaExitosa().shouldBe(100)
-      }
-
+      estadisticas.porecentajePedidosConRespuestaExitosa().shouldBe(75.0)
     }
+  }
 })
